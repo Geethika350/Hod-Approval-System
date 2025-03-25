@@ -1,67 +1,132 @@
 import React, { useState } from "react";
 import "./App.css";
 
-function App() {
-  const [requests, setRequests] = useState([]);
-  const [name, setName] = useState("");
-  const [reason, setReason] = useState("");
+const Login = ({ onLogin }) => {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    const newRequest = { id: Date.now(), name, reason, status: "Pending" };
-    setRequests([...requests, newRequest]);
-    setName("");
-    setReason("");
-  };
-
-  const updateStatus = (id, status) => {
-    setRequests(
-      requests.map((req) =>
-        req.id === id ? { ...req, status } : req
-      )
-    );
+    if (email === "hod@example.com" && password === "admin") {
+      onLogin("hod");
+    } else {
+      onLogin("student");
+    }
   };
 
   return (
     <div className="container">
-      <h1>HOD Approval System</h1>
-
-      {/* Leave Form */}
-      <form onSubmit={handleSubmit} className="leave-form">
+      <h2>Login</h2>
+      <form onSubmit={handleSubmit}>
         <input
-          type="text"
-          placeholder="Your Name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
+          type="email"
+          placeholder="Email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
           required
         />
-        <textarea
-          placeholder="Reason for Leave"
-          value={reason}
-          onChange={(e) => setReason(e.target.value)}
+        <input
+          type="password"
+          placeholder="Password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
           required
-        ></textarea>
-        <button type="submit">Submit Leave Request</button>
+        />
+        <button type="submit">Login</button>
       </form>
-
-      {/* Display Leave Requests */}
-      <h2>Leave Requests</h2>
-      <ul>
-        {requests.map((req) => (
-          <li key={req.id} className={`request ${req.status.toLowerCase()}`}>
-            <p><strong>{req.name}</strong> - {req.reason}</p>
-            <p>Status: <strong>{req.status}</strong></p>
-            {req.status === "Pending" && (
-              <div>
-                <button onClick={() => updateStatus(req.id, "Approved")}>Approve</button>
-                <button onClick={() => updateStatus(req.id, "Rejected")}>Reject</button>
-              </div>
-            )}
-          </li>
-        ))}
-      </ul>
     </div>
   );
-}
+};
+
+const LeaveRequest = ({ onSubmit }) => {
+  const [reason, setReason] = useState("");
+  const [submitted, setSubmitted] = useState(false);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onSubmit(reason);
+    setReason("");
+    setSubmitted(true);
+  };
+
+  return (
+    <div className="container">
+      <h2>Request Leave</h2>
+      {submitted ? (
+        <p>Your leave request has been submitted!</p>
+      ) : (
+        <form onSubmit={handleSubmit}>
+          <textarea
+            placeholder="Enter reason for leave"
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            required
+          ></textarea>
+          <button type="submit">Submit</button>
+        </form>
+      )}
+    </div>
+  );
+};
+
+const HODDashboard = ({ requests, onApprove, onReject }) => {
+  return (
+    <div className="container">
+      <h2>HOD Dashboard</h2>
+      {requests.length === 0 ? (
+        <p>No leave requests.</p>
+      ) : (
+        requests.map((req, index) => (
+          <div key={index} className="leave-item">
+            <p>{req.reason}</p>
+            <p>Status: {req.status}</p>
+            {req.status === "Pending" && (
+              <>
+                <button onClick={() => onApprove(index)}>Approve</button>
+                <button onClick={() => onReject(index)}>Reject</button>
+              </>
+            )}
+          </div>
+        ))
+      )}
+    </div>
+  );
+};
+
+const App = () => {
+  const [user, setUser] = useState(null);
+  const [requests, setRequests] = useState([]);
+
+  const handleLogin = (role) => {
+    setUser(role);
+  };
+
+  const handleLeaveSubmit = (reason) => {
+    setRequests([...requests, { reason, status: "Pending" }]);
+  };
+
+  const handleApprove = (index) => {
+    const newRequests = [...requests];
+    newRequests[index].status = "Approved ✅";
+    setRequests(newRequests);
+  };
+
+  const handleReject = (index) => {
+    const newRequests = [...requests];
+    newRequests[index].status = "Rejected ❌";
+    setRequests(newRequests);
+  };
+
+  return (
+    <div>
+      <h1>HOD Approval System</h1>
+      {!user && <Login onLogin={handleLogin} />}
+      {user === "student" && <LeaveRequest onSubmit={handleLeaveSubmit} />}
+      {user === "hod" && (
+        <HODDashboard requests={requests} onApprove={handleApprove} onReject={handleReject} />
+      )}
+    </div>
+  );
+};
 
 export default App;
